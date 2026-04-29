@@ -1,10 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# ── Placeholders — remove when Person A finishes data.sh ──
-get_cpu()    { echo "45"; }
-get_memory() { echo "62"; }
-get_disk()   { echo "78"; }
+# ── Load Person A's data functions ──────────────
+source ./data.sh
 
 # ── Colors ──────────────────────────────────────
 RED='\033[0;31m'
@@ -24,13 +22,36 @@ show_dashboard() {
     echo -e "${CYAN}${BOLD}║    SYSTEM MONITOR DASHBOARD      ║${RESET}"
     echo -e "${CYAN}${BOLD}╚══════════════════════════════════╝${RESET}"
     echo ""
-    CPU=$(get_cpu)
-    MEM=$(get_memory)
-    DISK=$(get_disk)
-    echo -e "${BOLD}  CPU Usage   :${RESET}  ${GREEN}${CPU}%${RESET}"
-    echo -e "${BOLD}  Memory Usage:${RESET}  ${YELLOW}${MEM}%${RESET}"
-    echo -e "${BOLD}  Disk Usage  :${RESET}  ${RED}${DISK}%${RESET}"
+
+    # ── CPU ─────────────────────────────────────
+    echo -e "  ${BOLD}CPU${RESET}"
+    printf "    %-16s : ${GREEN}%s${RESET}\n" "Usage" "$(get_cpu)"
     echo ""
+
+    # ── Memory ──────────────────────────────────
+    echo -e "  ${BOLD}Memory${RESET}"
+    while IFS='=' read -r key val; do
+        [[ -z "$key" || -z "$val" ]] && continue
+        printf "    %-16s : ${YELLOW}%s${RESET}\n" "$key" "$val"
+    done <<< "$(get_memory)"
+    echo ""
+
+    # ── Disk ────────────────────────────────────
+    echo -e "  ${BOLD}Disk${RESET}"
+    while IFS='=' read -r key val; do
+        [[ -z "$key" || -z "$val" ]] && continue
+        printf "    %-16s : ${RED}%s${RESET}\n" "$key" "$val"
+    done <<< "$(get_disk)"
+    echo ""
+
+    # ── Network ─────────────────────────────────
+    echo -e "  ${BOLD}Network${RESET}"
+    while IFS='=' read -r key val; do
+        [[ -z "$key" || -z "$val" ]] && continue
+        printf "    %-16s : %s\n" "$key" "$val"
+    done <<< "$(get_network)"
+    echo ""
+
     echo "──────────────────────────────────"
 }
 
@@ -90,7 +111,9 @@ main() {
                 ;;
             2)
                 log_action "User started auto-refresh"
+                trap 'echo -e "\n${YELLOW}  Returning to menu...${RESET}"; sleep 1' INT
                 auto_refresh
+                trap - INT
                 ;;
             3)
                 show_logs
